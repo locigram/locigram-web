@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Locigram — Self-Hosted AI Memory</title>
-  <meta name="description" content="Open-source, self-hosted memory layer for AI assistants. Ingest from email, tickets, chat. Extract facts. Recall with MCP + REST." />
+  <meta name="description" content="Open-source, self-hosted memory layer for AI assistants. Native OpenClaw integration. Ingest from email, tickets, chat. Extract facts. Recall via MCP + REST." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -520,6 +520,7 @@
       <a href="#" class="logo"><span>loci</span>gram</a>
       <ul class="nav-links">
         <li><a href="https://github.com/locigram/locigram">GitHub</a></li>
+        <li><a href="#openclaw" style="color:#7c6dfa;">OpenClaw</a></li>
         <li><a href="#quickstart">Quick Start</a></li>
         <li><a href="mailto:hello@locigram.ai">Contact</a></li>
       </ul>
@@ -607,6 +608,13 @@
       <h2 class="section-title">Built for developers who ship.</h2>
 
       <div class="features-grid">
+        <div class="feature-card" style="border-color: #2a2040; background: linear-gradient(135deg, #111118 0%, #16122a 100%);">
+          <div class="feature-icon fi-purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3>OpenClaw Integration <span style="font-size:0.65rem;background:#7c6dfa22;color:#7c6dfa;border:1px solid #7c6dfa44;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;">Featured</span></h3>
+          <p>Native integration with <a href="https://openclaw.ai" style="color:#7c6dfa;text-decoration:none;">OpenClaw</a> — configure Locigram as an MCP server and your AI agents gain persistent memory, post-compaction recovery, and cross-session context. The <code style="font-size:0.8em;background:#1e1e2a;padding:1px 5px;border-radius:3px;">session-monitor</code> daemon watches agent sessions and continuously writes handoff summaries into Locigram.</p>
+        </div>
         <div class="feature-card">
           <div class="feature-icon fi-purple">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 2 2 4-4"/><path d="M21 12V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/></svg>
@@ -649,6 +657,46 @@
           <h3>Docker / K3s</h3>
           <p>One-command deployment with Docker Compose. Production-ready Kubernetes manifests for K3s clusters.</p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OpenClaw Integration -->
+  <section id="openclaw" style="background: var(--bg); border-top: 1px solid var(--border);">
+    <div class="container">
+      <p class="section-label">Integrations</p>
+      <h2 class="section-title">Built for OpenClaw.</h2>
+      <p class="section-subtitle">Locigram is the official memory backend for <a href="https://openclaw.ai" style="color:#7c6dfa;text-decoration:none;">OpenClaw</a> agents. Two layers of integration — choose what fits your workflow.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2.5rem;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
+            <div style="width:36px;height:36px;border-radius:8px;background:#7c6dfa22;display:flex;align-items:center;justify-content:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c6dfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 2 2 4-4"/><path d="M21 12V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/></svg>
+            </div>
+            <h3 style="font-size:1rem;font-weight:600;color:#fff;margin:0;">MCP Server</h3>
+          </div>
+          <p style="color:#a0a0b0;font-size:0.9rem;line-height:1.6;margin-bottom:1.25rem;">Configure Locigram as an MCP server in your OpenClaw config via <code style="background:#1e1e2a;padding:1px 5px;border-radius:3px;font-size:0.8em;">mcporter</code>. Agents get <code style="background:#1e1e2a;padding:1px 5px;border-radius:3px;font-size:0.8em;">memory_remember()</code>, <code style="background:#1e1e2a;padding:1px 5px;border-radius:3px;font-size:0.8em;">memory_search()</code>, and <code style="background:#1e1e2a;padding:1px 5px;border-radius:3px;font-size:0.8em;">memory_session_start()</code> tools automatically. Post-compaction recovery works out of the box.</p>
+          <a href="https://github.com/locigram/locigram/blob/main/docs/openclaw-integration.md" style="color:#7c6dfa;font-size:0.875rem;text-decoration:none;">Read integration guide →</a>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
+            <div style="width:36px;height:36px;border-radius:8px;background:#22c55e22;display:flex;align-items:center;justify-content:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+            </div>
+            <h3 style="font-size:1rem;font-weight:600;color:#fff;margin:0;">Session Monitor</h3>
+          </div>
+          <p style="color:#a0a0b0;font-size:0.9rem;line-height:1.6;margin-bottom:1.25rem;"><code style="background:#1e1e2a;padding:1px 5px;border-radius:3px;font-size:0.8em;">@locigram/session-monitor</code> runs as a background daemon watching your OpenClaw agent JSONL session files. Every 5 messages it writes a handoff summary to Locigram, keeping <code style="background:#1e1e2a;padding:1px 5px;border-radius:3px;font-size:0.8em;">live-handoff.md</code> and <code style="background:#1e1e2a;padding:1px 5px;border-radius:3px;font-size:0.8em;">active-context.json</code> always current. Multi-agent fleets supported — each agent gets its own named service.</p>
+          <a href="https://github.com/locigram/locigram/blob/main/packages/connectors/session-monitor/README.md" style="color:#22c55e;font-size:0.875rem;text-decoration:none;">Session Monitor docs →</a>
+        </div>
+      </div>
+
+      <div style="margin-top:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem 2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <p style="color:#fff;font-weight:600;margin:0 0 0.25rem;">Wire it up in 3 steps</p>
+          <p style="color:#a0a0b0;font-size:0.875rem;margin:0;">Deploy Locigram → add MCP config to OpenClaw → add recall snippet to SOUL.md</p>
+        </div>
+        <a href="https://github.com/locigram/locigram/blob/main/docs/openclaw-integration.md" style="background:#7c6dfa;color:#fff;text-decoration:none;padding:0.6rem 1.25rem;border-radius:8px;font-size:0.875rem;font-weight:500;white-space:nowrap;">Full Integration Guide →</a>
       </div>
     </div>
   </section>
