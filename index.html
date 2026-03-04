@@ -4,22 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Locigram — Self-Hosted AI Memory</title>
-  <meta name="description" content="Open-source memory layer for AI assistants. MCP + REST. Postgres + Qdrant. Self-hosted." />
+  <meta name="description" content="Open-source, self-hosted memory layer for AI assistants. Ingest from email, tickets, chat. Extract facts. Recall with MCP + REST." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0c0c10;
-      --surface: #111116;
-      --border: #1e1e28;
-      --border2: #252532;
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: #1e1e2a;
       --accent: #7c6dfa;
+      --accent-glow: rgba(124, 109, 250, 0.15);
       --green: #22c55e;
-      --teal: #2dd4bf;
-      --yellow: #eab308;
       --text: #d4d4e0;
-      --muted: #666677;
-      --dim: #44445a;
+      --text-bright: #f0f0f5;
+      --muted: #7a7a8e;
       --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
     }
 
@@ -28,640 +29,697 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      font-size: 14px;
-      line-height: 1.65;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 0 1.25rem 5rem;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* ── layout ── */
-    .page { max-width: 820px; width: 100%; padding-top: 3.5rem; }
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(10, 10, 15, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
 
-    /* ── header ── */
-    .site-header {
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      height: 64px;
       display: flex;
-      align-items: baseline;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-bright);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span { color: var(--accent); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--text-bright); }
+
+    /* ── Sections ── */
+    section { padding: 6rem 2rem; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+
+    .section-subtitle {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 600px;
+      line-height: 1.7;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8rem 2rem 6rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(124, 109, 250, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content { position: relative; z-index: 1; max-width: 800px; }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 900;
+      color: var(--text-bright);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.7;
+    }
+
+    .hero-ctas {
+      display: flex;
       gap: 1rem;
-      margin-bottom: 2.5rem;
+      justify-content: center;
       flex-wrap: wrap;
     }
-    .wordmark {
-      font-size: 1.15rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
+
+    .btn-primary, .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.85rem 1.75rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--accent);
       color: #fff;
     }
-    .wordmark span { color: var(--accent); }
-    .header-links { display: flex; gap: 1.25rem; margin-left: auto; }
-    .header-links a {
-      font-size: 0.82rem; color: var(--muted); text-decoration: none;
-      transition: color 0.15s;
-    }
-    .header-links a:hover { color: var(--text); }
 
-    /* ── status badge ── */
-    .status-line {
+    .btn-primary:hover {
+      background: #6b5ce7;
+      box-shadow: 0 0 30px rgba(124, 109, 250, 0.3);
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: #2e2e3e;
+      background: #16161e;
+    }
+
+    /* ── Problem ── */
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+
+    .problem-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      transition: border-color 0.2s;
+    }
+
+    .problem-card:hover { border-color: #2e2e3e; }
+
+    .problem-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: rgba(124, 109, 250, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .problem-icon svg { width: 24px; height: 24px; color: var(--accent); }
+
+    .problem-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      margin-bottom: 0.5rem;
+    }
+
+    .problem-card p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── How It Works ── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 3rem;
+      position: relative;
+    }
+
+    .step {
+      text-align: center;
+      position: relative;
+    }
+
+    .step-number {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #9b8bfa);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.25rem;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .step h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      margin-bottom: 0.5rem;
+    }
+
+    .step p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+
+    .step-arrow {
+      position: absolute;
+      top: 28px;
+      right: -1rem;
+      color: var(--border);
+    }
+
+    .step:last-child .step-arrow { display: none; }
+
+    /* ── Features ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      transition: border-color 0.2s;
+    }
+
+    .feature-card:hover { border-color: #2e2e3e; }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .feature-icon svg { width: 20px; height: 20px; }
+
+    .fi-purple { background: rgba(124, 109, 250, 0.1); color: var(--accent); }
+    .fi-green { background: rgba(34, 197, 94, 0.1); color: var(--green); }
+    .fi-blue { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
+
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      margin-bottom: 0.4rem;
+    }
+
+    .feature-card p {
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── Quick Start ── */
+    .quickstart-block {
+      margin-top: 3rem;
+      max-width: 720px;
+    }
+
+    .terminal {
+      background: #08080d;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .terminal-header {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      margin-bottom: 2rem;
-      font-size: 0.78rem;
-      color: var(--muted);
     }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--yellow); }
 
-    /* ── summary block ── */
-    .summary {
-      border-left: 2px solid var(--border2);
-      padding: 0.2rem 0 0.2rem 1rem;
-      margin-bottom: 3rem;
+    .terminal-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
     }
-    .summary p {
-      color: var(--text);
-      font-size: 0.95rem;
-      line-height: 1.7;
-      margin-bottom: 0.4rem;
-    }
-    .summary p:last-child { margin-bottom: 0; }
 
-    /* ── section ── */
-    section { margin-bottom: 3.5rem; }
-    h2 {
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid var(--border);
-    }
-    h3 {
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: var(--text);
-      margin: 1.5rem 0 0.5rem;
-    }
-    h3:first-child { margin-top: 0; }
-    p {
-      font-size: 0.875rem;
-      color: var(--muted);
-      line-height: 1.7;
-      margin-bottom: 0.75rem;
-    }
-    p:last-child { margin-bottom: 0; }
-    p strong { color: var(--text); font-weight: 600; }
-    code {
+    .terminal-dot:nth-child(1) { background: #ff5f57; }
+    .terminal-dot:nth-child(2) { background: #febc2e; }
+    .terminal-dot:nth-child(3) { background: #28c840; }
+
+    .terminal pre {
+      padding: 1.5rem;
+      margin: 0;
       font-family: var(--mono);
-      font-size: 0.8rem;
-      background: rgba(124,109,250,0.08);
-      border: 1px solid rgba(124,109,250,0.15);
-      border-radius: 3px;
-      padding: 0.1em 0.35em;
-      color: #b4aaff;
+      font-size: 0.85rem;
+      line-height: 1.8;
+      color: #c9d1d9;
+      overflow-x: auto;
+      background: transparent;
+      border: none;
+      border-radius: 0;
     }
 
-    /* ── tables ── */
-    .tbl-wrap { overflow-x: auto; margin: 0.75rem 0; }
-    table {
+    .terminal .comment { color: #555570; }
+    .terminal .cmd { color: var(--green); }
+    .terminal .flag { color: #38bdf8; }
+    .terminal .url { color: #a78bfa; }
+
+    /* ── Architecture ── */
+    .arch-table {
+      margin-top: 3rem;
+      overflow-x: auto;
+    }
+
+    .arch-table table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.82rem;
+      font-size: 0.875rem;
     }
-    th {
+
+    .arch-table th {
       text-align: left;
-      font-weight: 700;
-      font-size: 0.72rem;
-      letter-spacing: 0.06em;
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
-      padding: 0.5rem 0.85rem;
-      border-bottom: 1px solid var(--border2);
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
       white-space: nowrap;
     }
-    td {
-      padding: 0.55rem 0.85rem;
+
+    .arch-table td {
+      padding: 0.85rem 1rem;
       border-bottom: 1px solid var(--border);
       vertical-align: top;
-      color: var(--text);
       line-height: 1.55;
     }
-    tr:last-child td { border-bottom: none; }
-    td code { font-size: 0.75rem; }
-    td .dim { color: var(--muted); font-size: 0.8rem; }
 
-    /* ── code blocks ── */
-    pre {
-      background: #08080d;
-      border: 1px solid var(--border2);
-      border-radius: 6px;
-      padding: 1rem 1.1rem;
-      overflow-x: auto;
-      margin: 0.75rem 0;
+    .arch-table tr:last-child td { border-bottom: none; }
+
+    .arch-table .pkg {
       font-family: var(--mono);
-      font-size: 0.78rem;
-      line-height: 1.7;
-      color: #c9d1d9;
-    }
-    pre .c  { color: #555570; }
-    pre .k  { color: var(--teal); }
-    pre .s  { color: #d4a844; }
-    pre .t  { color: #b4aaff; }
-    pre .n  { color: #88cc88; }
-
-    /* ── schema block ── */
-    .schema {
-      background: #08080d;
-      border: 1px solid var(--border2);
-      border-radius: 6px;
-      padding: 1rem 1.1rem;
-      overflow-x: auto;
-      margin: 0.75rem 0;
-      font-family: var(--mono);
-      font-size: 0.76rem;
-      line-height: 1.8;
-      color: #7a8090;
-    }
-    .schema .col  { color: #c9d1d9; }
-    .schema .type { color: var(--teal); }
-    .schema .note { color: #555570; }
-    .schema .grp  { color: var(--muted); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 0.5rem; display: block; }
-
-    /* ── formula ── */
-    .formula {
-      background: rgba(45,212,191,0.05);
-      border: 1px solid rgba(45,212,191,0.15);
-      border-radius: 6px;
-      padding: 0.85rem 1rem;
-      margin: 0.75rem 0;
-      font-family: var(--mono);
-      font-size: 0.82rem;
-      color: var(--teal);
-      line-height: 1.7;
-    }
-    .formula .dim { color: var(--muted); }
-
-    /* ── tier list ── */
-    .tier-list { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.75rem 0; }
-    .tier {
-      display: flex; align-items: baseline; gap: 0.75rem;
-      padding: 0.55rem 0.85rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 0.82rem;
-    }
-    .tier-name { color: var(--text); font-weight: 700; min-width: 52px; }
-    .tier-desc { color: var(--muted); line-height: 1.5; }
-
-    /* ── connector list ── */
-    .connector-list { display: flex; flex-direction: column; gap: 0; margin: 0.75rem 0; }
-    .connector-row {
-      display: flex; align-items: flex-start; gap: 0.75rem;
-      padding: 0.6rem 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.82rem;
-    }
-    .connector-row:last-child { border-bottom: none; }
-    .c-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; margin-top: 0.35rem; }
-    .c-name { color: var(--text); font-weight: 600; min-width: 185px; flex-shrink: 0; }
-    .c-note { color: var(--muted); line-height: 1.5; }
-
-    /* ── package list ── */
-    .pkg-list { display: flex; flex-direction: column; gap: 0; margin: 0.75rem 0; }
-    .pkg-row {
-      display: flex; align-items: baseline; gap: 0.75rem;
-      padding: 0.5rem 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.82rem;
-    }
-    .pkg-row:last-child { border-bottom: none; }
-    .pkg-name { color: #b4aaff; font-family: var(--mono); font-size: 0.75rem; min-width: 220px; flex-shrink: 0; }
-    .pkg-desc { color: var(--muted); line-height: 1.5; }
-
-    /* ── stack chips ── */
-    .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
-    .chip {
-      background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: 4px;
-      padding: 0.25rem 0.6rem;
-      font-size: 0.77rem;
-      color: var(--muted);
+      font-size: 0.8rem;
+      color: #b4aaff;
+      white-space: nowrap;
     }
 
-    /* ── footer ── */
+    .arch-table .desc { color: var(--muted); }
+
+    /* ── Footer ── */
     footer {
       border-top: 1px solid var(--border);
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      font-size: 0.78rem;
-      color: var(--muted);
+      padding: 3rem 2rem;
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
       display: flex;
       justify-content: space-between;
+      align-items: center;
       flex-wrap: wrap;
-      gap: 0.5rem;
+      gap: 1rem;
     }
-    footer a { color: var(--muted); text-decoration: none; }
-    footer a:hover { color: var(--text); }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: color 0.2s;
+    }
+
+    footer a:hover { color: var(--text-bright); }
+
+    .footer-copy {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      section { padding: 4rem 1.25rem; }
+
+      .problem-grid,
+      .steps,
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .step-arrow { display: none; }
+
+      .hero { padding: 7rem 1.25rem 4rem; min-height: auto; }
+
+      .hero h1 { font-size: 2.25rem; }
+      .hero p { font-size: 1.05rem; }
+
+      .section-title { font-size: 1.6rem; }
+
+      .nav-inner { padding: 0 1.25rem; }
+
+      .nav-links { gap: 1.25rem; }
+      .nav-links a { font-size: 0.8rem; }
+
+      .footer-inner { flex-direction: column; text-align: center; }
+      .footer-links { justify-content: center; }
+
+      .arch-table { font-size: 0.8rem; }
+    }
   </style>
 </head>
 <body>
-<div class="page">
 
-  <!-- Header -->
-  <header class="site-header">
-    <div class="wordmark"><span>loci</span>gram</div>
-    <nav class="header-links">
-      <a href="https://github.com/locigram/locigram">GitHub</a>
-      <a href="https://github.com/locigram/locigram#quick-start-docker">Quick Start</a>
-      <a href="mailto:hello@locigram.ai">Contact</a>
-    </nav>
-  </header>
+  <!-- Nav -->
+  <nav>
+    <div class="nav-inner">
+      <a href="#" class="logo"><span>loci</span>gram</a>
+      <ul class="nav-links">
+        <li><a href="https://github.com/locigram/locigram">GitHub</a></li>
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="mailto:hello@locigram.ai">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
 
-  <!-- Status -->
-  <div class="status-line">
-    <div class="dot"></div>
-    Pre-production — connectors built, schema v3 (access scoring, co-occurrence) in progress
-  </div>
-
-  <!-- Summary -->
-  <div class="summary">
-    <p>
-      Locigram is a self-hosted memory layer for AI assistants, accessible via MCP and REST.
-      It ingests content from email, tickets, chat, and financial systems;
-      extracts facts into addressable memory units (<em>locigrams</em>);
-      and promotes high-confidence, repeatedly-accessed facts into <em>truths</em> via a decay-based scoring engine.
-    </p>
-    <p>
-      Storage is Postgres (structured) + Qdrant (vector). Deployment is Docker Compose or Kubernetes.
-      LLM roles (embed, extract, summary) each point at any OpenAI-compatible endpoint.
-      Connectors activate automatically from environment variables — none are required to start.
-    </p>
-  </div>
-
-
-  <!-- Concepts -->
-  <section>
-    <h2>Data Model</h2>
-
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>Term</th><th>Definition</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Locigram</strong></td>
-            <td>A single memory unit. One fact, event, or observation. Immutable once stored. Has content, locus, entities, confidence, source, and access scoring metadata.</td>
-          </tr>
-          <tr>
-            <td><strong>Truth</strong></td>
-            <td>A high-confidence fact synthesized from multiple reinforcing locigrams by the truth engine. Has its own confidence score. Source locigrams go cold after promotion.</td>
-          </tr>
-          <tr>
-            <td><strong>Palace</strong></td>
-            <td>One user or org's complete memory store. Isolated Postgres schema + Qdrant collection. Multiple palaces share a single deployment; separate K8s instances for hard isolation.</td>
-          </tr>
-          <tr>
-            <td><strong>Locus</strong></td>
-            <td>A namespace for grouping and filtering recall. Examples: <code>people/alice</code>, <code>business/acme</code>, <code>project/locigram</code>, <code>technical/firewall</code>.</td>
-          </tr>
-          <tr>
-            <td><strong>Connector</strong></td>
-            <td>A plugin that pulls from an external source, applies per-source noise filtering, and feeds the ingest pipeline. Activates at startup when its env vars are present.</td>
-          </tr>
-          <tr>
-            <td><strong>Reference data</strong></td>
-            <td>Stable facts about things (devices, contracts, contacts). Flagged <code>is_reference = true</code>. Never processed by the truth engine. Superseded by creating a new record with the old one's <code>expires_at</code> set — history preserved, nothing deleted.</td>
-          </tr>
-        </tbody>
-      </table>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Your AI finally <em>remembers.</em></h1>
+      <p>Open-source, self-hosted memory layer for AI assistants. Ingest from email, tickets, and chat. Extract facts. Recall instantly via MCP&nbsp;+&nbsp;REST.</p>
+      <div class="hero-ctas">
+        <a href="https://github.com/locigram/locigram" class="btn-primary">Get Started <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+        <a href="https://github.com/locigram/locigram" class="btn-secondary"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg> View on GitHub</a>
+      </div>
     </div>
   </section>
 
-
-  <!-- Schema -->
+  <!-- Problem -->
   <section>
-    <h2>Schema</h2>
+    <div class="container">
+      <p class="section-label">The Problem</p>
+      <h2 class="section-title">AI assistants are brilliant but forgetful.</h2>
+      <p class="section-subtitle">Every conversation starts from zero. Context is lost. Knowledge is siloed. Your team re-explains the same things over and over.</p>
 
-    <h3>locigrams</h3>
-    <div class="schema">
-<span class="grp">core</span>
-<span class="col">id</span>            <span class="type">UUID</span>         <span class="note">PRIMARY KEY DEFAULT gen_random_uuid()</span>
-<span class="col">content</span>       <span class="type">TEXT</span>         <span class="note">NOT NULL</span>
-<span class="col">palace_id</span>     <span class="type">TEXT</span>         <span class="note">NOT NULL REFERENCES palaces(id) ON DELETE CASCADE</span>
-<span class="col">source_type</span>   <span class="type">TEXT</span>         <span class="note">email | ticket | chat | device | invoice | payment | manual | webhook | …</span>
-<span class="col">source_ref</span>    <span class="type">TEXT</span>         <span class="note">UNIQUE(palace_id, source_ref) — dedup key</span>
-<span class="col">connector</span>     <span class="type">TEXT</span>         <span class="note">microsoft365 | halopsa | ninjaone | gmail | qbo | webhook | …</span>
-
-<span class="grp">temporal</span>
-<span class="col">occurred_at</span>   <span class="type">TIMESTAMPTZ</span>  <span class="note">when the event happened, not when ingested</span>
-<span class="col">created_at</span>    <span class="type">TIMESTAMPTZ</span>  <span class="note">NOT NULL DEFAULT now()</span>
-<span class="col">expires_at</span>    <span class="type">TIMESTAMPTZ</span>  <span class="note">NULL = active; set when superseded (reference) or decayed (knowledge)</span>
-
-<span class="grp">classification</span>
-<span class="col">locus</span>         <span class="type">TEXT</span>         <span class="note">NOT NULL — namespace for recall filtering</span>
-<span class="col">client_id</span>     <span class="type">TEXT</span>         <span class="note">MSP client identifier, first-class filter</span>
-<span class="col">importance</span>    <span class="type">TEXT</span>         <span class="note">low | normal | high — from source metadata</span>
-<span class="col">is_reference</span>  <span class="type">BOOLEAN</span>      <span class="note">NOT NULL DEFAULT false — true skips truth engine</span>
-<span class="col">reference_type</span> <span class="type">TEXT</span>        <span class="note">network_device | software | configuration | service_account | contract | contact</span>
-
-<span class="grp">extraction outputs</span>
-<span class="col">entities</span>      <span class="type">TEXT[]</span>       <span class="note">NOT NULL DEFAULT '{}' — GIN indexed</span>
-<span class="col">confidence</span>    <span class="type">REAL</span>         <span class="note">NOT NULL DEFAULT 1.0</span>
-<span class="col">metadata</span>      <span class="type">JSONB</span>        <span class="note">NOT NULL DEFAULT '{}' — connector-specific fields; financial amounts stored here, not in content</span>
-
-<span class="grp">access scoring</span>
-<span class="col">access_count</span>     <span class="type">INT</span>       <span class="note">NOT NULL DEFAULT 0 — incremented on every recall hit</span>
-<span class="col">last_accessed_at</span> <span class="type">TIMESTAMPTZ</span> <span class="note">NULL until first recall</span>
-<span class="col">access_score</span>     <span class="type">FLOAT</span>     <span class="note">NOT NULL DEFAULT 1.0 — recomputed nightly by decay sweep</span>
-
-<span class="grp">vector</span>
-<span class="col">embedding_id</span>  <span class="type">TEXT</span>         <span class="note">Qdrant point ID</span>
-    </div>
-
-    <h3>retrieval_events</h3>
-    <p>Logs which locigram IDs are returned per query. Used by the weekly co-occurrence sweep.</p>
-    <div class="schema">
-<span class="col">id</span>            <span class="type">UUID</span>         <span class="note">PRIMARY KEY DEFAULT gen_random_uuid()</span>
-<span class="col">palace_id</span>     <span class="type">TEXT</span>         <span class="note">NOT NULL REFERENCES palaces(id) ON DELETE CASCADE</span>
-<span class="col">query_text</span>    <span class="type">TEXT</span>         <span class="note">original search query</span>
-<span class="col">locigram_ids</span>  <span class="type">TEXT[]</span>       <span class="note">NOT NULL — all IDs returned in this result set; GIN indexed</span>
-<span class="col">retrieved_at</span>  <span class="type">TIMESTAMPTZ</span>  <span class="note">NOT NULL DEFAULT now()</span>
+      <div class="problem-grid">
+        <div class="problem-card">
+          <div class="problem-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+          </div>
+          <h3>LLMs forget everything</h3>
+          <p>Every session resets. There's no persistent memory. Your AI can't build on what it learned yesterday.</p>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <h3>RAG is clunky to maintain</h3>
+          <p>Embedding pipelines, chunking strategies, stale indexes. Building memory on top of RAG alone is fragile and labor-intensive.</p>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3>Your data, someone else's cloud</h3>
+          <p>Third-party memory services mean your emails, tickets, and business context live on infrastructure you don't control.</p>
+        </div>
+      </div>
     </div>
   </section>
 
+  <!-- How It Works -->
+  <section style="background: var(--surface);">
+    <div class="container">
+      <p class="section-label">How It Works</p>
+      <h2 class="section-title">Three steps to persistent memory.</h2>
+      <p class="section-subtitle">Locigram connects to your data, extracts structured facts, and makes them instantly recallable.</p>
 
-  <!-- Truth Engine -->
-  <section>
-    <h2>Truth Engine</h2>
-
-    <h3>Access scoring and temporal decay</h3>
-    <p>
-      Every locigram tracks recall frequency (<code>access_count</code>) and recency (<code>last_accessed_at</code>).
-      A nightly sweep recomputes <code>access_score</code> for all non-reference locigrams:
-    </p>
-    <div class="formula">
-access_score = access_count / (days_since_last_access + 1)<sup>decay_exponent</sup>
-<br>
-<span class="dim">-- high recall frequency + recent access → high score</span>
-<span class="dim">-- never recalled → score approaches zero as age increases</span>
-<span class="dim">-- decay_exponent is configurable; default 1.5</span>
-    </div>
-    <p>
-      Score thresholds determine tier transitions. Low-score locigrams in cold tier are sent
-      through an LLM re-assessment pass to confirm they're garbage before expiration —
-      this prevents false positives on rarely-accessed but legitimately important facts.
-    </p>
-
-    <div class="tier-list">
-      <div class="tier">
-        <div class="tier-name">Hot</div>
-        <div class="tier-desc"><code>access_score</code> above warm threshold. Full vector + full-text indexed. Returned first in recall.</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3>Ingest</h3>
+          <p>Connect email, tickets, chat, and financial systems. Connectors auto-activate from environment variables. Push anything via webhook.</p>
+          <svg class="step-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3>Extract</h3>
+          <p>LLMs parse entities, relationships, and confidence from raw content. Noise is filtered. Facts become addressable memory units — locigrams.</p>
+          <svg class="step-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3>Recall</h3>
+          <p>Query via MCP or REST. High-confidence facts are promoted into truths by the decay-based scoring engine. Your AI remembers what matters.</p>
+        </div>
       </div>
-      <div class="tier">
-        <div class="tier-name">Warm</div>
-        <div class="tier-desc">Score dropped below hot threshold after inactivity. Still indexed; recall weight reduced.</div>
-      </div>
-      <div class="tier">
-        <div class="tier-name">Cold</div>
-        <div class="tier-desc">Further decay, or source locigrams promoted into a Truth. LLM noise re-assessment runs here. Expire if confirmed junk; archive if still valid.</div>
-      </div>
-      <div class="tier">
-        <div class="tier-name">Truth</div>
-        <div class="tier-desc">Synthesized from multiple reinforcing locigrams by the summary LLM. Carries its own confidence score. Source locigrams demoted to cold.</div>
-      </div>
-    </div>
-
-    <h3>Co-occurrence clustering</h3>
-    <p>
-      The <code>retrieval_events</code> table records which locigram IDs are returned together per query.
-      A weekly sweep unnests these ID arrays and counts pairwise co-occurrence frequency across all events.
-      Pairs that appear together above a configurable threshold get <code>cluster_candidate = true</code>
-      on both locigrams. The truth engine picks up cluster candidates and passes them to the summary LLM
-      for merging into a single truth.
-    </p>
-    <p>
-      This is a better promotion signal than time-based logic alone: co-retrieval is direct evidence
-      that two locigrams are conceptually related, regardless of when they were ingested or how similar
-      their raw content is. Two records from different connectors, months apart, can be correctly
-      identified as describing the same underlying fact.
-    </p>
-
-    <h3>Reference data</h3>
-    <p>
-      Locigrams with <code>is_reference = true</code> are excluded from truth engine processing and
-      temporal decay. They represent stable facts about things that exist rather than events that happened.
-    </p>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr><th>reference_type</th><th>Examples</th><th>Superseded when</th></tr></thead>
-        <tbody>
-          <tr><td><code>network_device</code></td><td>Firewall IP, switch hostname, VLAN ID</td><td>NinjaOne sync detects a change</td></tr>
-          <tr><td><code>software</code></td><td>App version, license seat count, install state</td><td>New version ingested</td></tr>
-          <tr><td><code>configuration</code></td><td>Policy settings, baselines, thresholds</td><td>Change detected in source</td></tr>
-          <tr><td><code>service_account</code></td><td>Usernames, roles, permissions (not credentials)</td><td>Account deprovisioned</td></tr>
-          <tr><td><code>contract</code></td><td>SLA terms, renewal dates, pricing tiers</td><td>Renewal date passes</td></tr>
-          <tr><td><code>contact</code></td><td>Person name, phone, role, org</td><td>Person leaves org or role changes</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p>
-      Superseding a reference record sets <code>expires_at = now()</code> on the old record and creates
-      a new one. Records are never deleted — history is always recoverable.
-    </p>
-  </section>
-
-
-  <!-- Connectors -->
-  <section>
-    <h2>Connectors</h2>
-    <p>
-      Connectors auto-register at startup when their required env vars are present.
-      Each connector applies its own noise filter before any content reaches the pipeline or LLM.
-    </p>
-
-    <div class="connector-list">
-      <div class="connector-row">
-        <div class="c-dot"></div>
-        <div class="c-name">Microsoft 365 — Email</div>
-        <div class="c-note">Incremental sync via Graph API delta link. Filters: spam, junk folder, noreply senders, newsletters, OTP codes, calendar accept/decline messages, drafts, sent items. Requires <code>Mail.Read</code> + <code>User.Read.All</code> (Application permissions).</div>
-      </div>
-      <div class="connector-row">
-        <div class="c-dot"></div>
-        <div class="c-name">Microsoft 365 — Teams</div>
-        <div class="c-note">Thread-based ingestion. Messages grouped by reply thread and submitted as a single unit after 2 hours of inactivity. Threads under 20 words are dropped. Filters: bot/webhook messages, system events, pure acknowledgements ("ok", "thanks", reactions). Requires <code>ChannelMessage.Read.All</code>, <code>Team.ReadBasic.All</code>, <code>User.Read.All</code>.</div>
-      </div>
-      <div class="connector-row">
-        <div class="c-dot"></div>
-        <div class="c-name">HaloPSA</div>
-        <div class="c-note">Tickets ingested as knowledge. Assets and contracts ingested as reference data (<code>is_reference = true</code>). Internal-only test tickets, system-generated tickets, and closed tickets with no notes are skipped. Requires scopes: <code>read:tickets</code>, <code>read:assets</code>, <code>read:contracts</code>, <code>read:clients</code>.</div>
-      </div>
-      <div class="connector-row">
-        <div class="c-dot"></div>
-        <div class="c-name">NinjaOne</div>
-        <div class="c-note">All device records ingested as reference data (<code>is_reference = true</code>, <code>reference_type = network_device</code>). Alerts ingested as knowledge events. Requires permissions: <code>Monitoring</code>, <code>Management</code>, <code>Reporting</code>.</div>
-      </div>
-      <div class="connector-row">
-        <div class="c-dot"></div>
-        <div class="c-name">Gmail</div>
-        <div class="c-note">Incremental sync via <code>historyId</code>. Same noise filters as M365 email. OAuth2 refresh token required (one-time consent flow). Scope: <code>gmail.readonly</code>.</div>
-      </div>
-      <div class="connector-row">
-        <div class="c-dot"></div>
-        <div class="c-name">QuickBooks Online</div>
-        <div class="c-note">Invoices, payments, vendor bills, time activities. <strong>LLM extraction is skipped</strong> — records are pre-classified by the connector directly from QBO's structured data. Dollar amounts are stored in <code>metadata</code> JSONB, not in <code>content</code>, to prevent LLM paraphrasing of financial figures. Invoices/bills are reference data; payments/time activities are knowledge events. Requires scope: <code>com.intuit.quickbooks.accounting</code>.</div>
-      </div>
-      <div class="connector-row">
-        <div class="c-dot"></div>
-        <div class="c-name">Webhook (always on)</div>
-        <div class="c-note">Push any content directly via <code>POST /api/webhook/ingest</code>. No config required. Accepts <code>sourceType</code>: email, chat, ticket, device, invoice, payment, llm-session, note, manual, and others. Primary path for LLM session summaries and manual entries.</div>
-      </div>
-    </div>
-
-    <pre><span class="c"># Webhook example</span>
-curl -X POST http://localhost:3000/api/webhook/ingest \
-  -H <span class="s">"Authorization: Bearer $API_TOKEN"</span> \
-  -H <span class="s">"Content-Type: application/json"</span> \
-  -d <span class="s">'{
-    "content": "Accudata firewall throwing alerts since 14:00. Blocked 203.0.113.42. Notified client.",
-    "sourceType": "note",
-    "metadata": { "client_id": "accudata" }
-  }'</span></pre>
-  </section>
-
-
-  <!-- LLM Roles -->
-  <section>
-    <h2>LLM Configuration</h2>
-    <p>
-      Three independently-configured roles. Each accepts any OpenAI-compatible endpoint.
-      Omit <code>*_KEY</code> for local/unauthenticated endpoints.
-      <code>LOCIGRAM_SUMMARY_*</code> falls back to the extract role if unset.
-    </p>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr><th>Role</th><th>What it does</th><th>URL var</th><th>Model var</th></tr></thead>
-        <tbody>
-          <tr>
-            <td><strong>Embed</strong></td>
-            <td>Converts content to vectors for semantic recall. Requires <code>POST /v1/embeddings</code>.</td>
-            <td><code>LOCIGRAM_EMBED_URL</code></td>
-            <td><code>LOCIGRAM_EMBED_MODEL</code></td>
-          </tr>
-          <tr>
-            <td><strong>Extract</strong></td>
-            <td>Parses entities, locus, <code>is_reference</code>, confidence, and importance from raw content. Requires reliable structured JSON output.</td>
-            <td><code>LOCIGRAM_EXTRACT_URL</code></td>
-            <td><code>LOCIGRAM_EXTRACT_MODEL</code></td>
-          </tr>
-          <tr>
-            <td><strong>Summary</strong></td>
-            <td>Truth promotion — synthesizes multiple locigrams into a single merged truth. Also used for LLM noise re-assessment on cold locigrams.</td>
-            <td><code>LOCIGRAM_SUMMARY_URL</code></td>
-            <td><code>LOCIGRAM_SUMMARY_MODEL</code></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <h3>Recommended models</h3>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr><th>Role</th><th>Ollama (local)</th><th>OpenAI</th><th>Groq</th></tr></thead>
-        <tbody>
-          <tr>
-            <td>Embed</td>
-            <td><code>nomic-embed-text</code></td>
-            <td><code>text-embedding-3-small</code></td>
-            <td class="dim">Not available — use OpenAI or Ollama</td>
-          </tr>
-          <tr>
-            <td>Extract</td>
-            <td><code>qwen2.5:7b</code></td>
-            <td><code>gpt-4o-mini</code></td>
-            <td><code>llama-3.1-8b-instant</code></td>
-          </tr>
-          <tr>
-            <td>Summary</td>
-            <td><code>qwen2.5:14b</code></td>
-            <td><code>gpt-4o</code></td>
-            <td><code>llama-3.3-70b-versatile</code></td>
-          </tr>
-        </tbody>
-      </table>
     </div>
   </section>
 
+  <!-- Features -->
+  <section>
+    <div class="container">
+      <p class="section-label">Features</p>
+      <h2 class="section-title">Built for developers who ship.</h2>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon fi-purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 2 2 4-4"/><path d="M21 12V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/></svg>
+          </div>
+          <h3>MCP-Native</h3>
+          <p>First-class Model Context Protocol support. Any MCP-compatible AI assistant can read and write memory out of the box.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3>Own Your Data</h3>
+          <p>Self-hosted on your infrastructure. Your emails, tickets, and business context never leave your network.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>
+          </div>
+          <h3>Truth Engine</h3>
+          <p>Decay-based scoring promotes high-confidence, frequently-accessed facts into truths. Noise fades. Signal sharpens.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>
+          </div>
+          <h3>Connectors</h3>
+          <p>Microsoft 365, Gmail, HaloPSA, NinjaOne, QuickBooks Online, webhooks. Add a connector by setting env vars — zero code.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+          </div>
+          <h3>Postgres + Qdrant</h3>
+          <p>Structured storage in PostgreSQL. Semantic search in Qdrant. Battle-tested databases you already know how to operate.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon fi-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <h3>Docker / K3s</h3>
+          <p>One-command deployment with Docker Compose. Production-ready Kubernetes manifests for K3s clusters.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- Quick Start -->
-  <section>
-    <h2>Quick Start</h2>
-    <pre><span class="c"># Pull local models (Ollama)</span>
-ollama pull nomic-embed-text
-ollama pull qwen2.5:7b
+  <section id="quickstart" style="background: var(--surface);">
+    <div class="container">
+      <p class="section-label">Quick Start</p>
+      <h2 class="section-title">Running in under a minute.</h2>
+      <p class="section-subtitle">Clone, configure, and start. Locigram runs anywhere Docker runs.</p>
 
-<span class="c"># Configure</span>
-cp .env.example .env
+      <div class="quickstart-block">
+        <div class="terminal">
+          <div class="terminal-header">
+            <div class="terminal-dot"></div>
+            <div class="terminal-dot"></div>
+            <div class="terminal-dot"></div>
+          </div>
+          <pre><span class="comment"># Clone the repo</span>
+<span class="cmd">git clone</span> https://github.com/locigram/locigram.git
+<span class="cmd">cd</span> locigram
 
-<span class="c"># Required: PALACE_ID, API_TOKEN, POSTGRES_PASSWORD</span>
-<span class="c"># Optional: LLM role overrides, connector vars</span>
+<span class="comment"># Configure</span>
+<span class="cmd">cp</span> .env.example .env
+<span class="comment"># Set PALACE_ID, API_TOKEN, POSTGRES_PASSWORD</span>
+<span class="comment"># Optional: LLM endpoints, connector env vars</span>
 
-<span class="c"># Start</span>
-docker compose -f deploy/docker/docker-compose.yml up
+<span class="comment"># Start everything</span>
+<span class="cmd">docker compose</span> <span class="flag">-f</span> deploy/docker/docker-compose.yml up
 
-<span class="c"># API:  http://localhost:3000</span>
-<span class="c"># MCP:  http://localhost:3000/mcp</span></pre>
+<span class="comment"># API:  http://localhost:3000</span>
+<span class="comment"># MCP:  http://localhost:3000/mcp</span></pre>
+        </div>
+      </div>
+    </div>
   </section>
-
 
   <!-- Architecture -->
   <section>
-    <h2>Architecture</h2>
-    <p>TypeScript monorepo (Bun workspaces). Each package has its own declared dependencies — Bun does not hoist transitive deps.</p>
+    <div class="container">
+      <p class="section-label">Architecture</p>
+      <h2 class="section-title">Modular by design.</h2>
+      <p class="section-subtitle">TypeScript monorepo. Each package owns its dependencies. Swap, extend, or contribute to any layer independently.</p>
 
-    <div class="pkg-list">
-      <div class="pkg-row"><div class="pkg-name">@locigram/core</div><div class="pkg-desc">Shared types and Zod schemas. Source of truth for <code>SourceType</code>, <code>Locus</code>, and all cross-package interfaces.</div></div>
-      <div class="pkg-row"><div class="pkg-name">@locigram/db</div><div class="pkg-desc">Drizzle schema + raw SQL <code>CREATE TABLE IF NOT EXISTS</code> migrations run at startup. No migration journal — idempotent by design.</div></div>
-      <div class="pkg-row"><div class="pkg-name">@locigram/server</div><div class="pkg-desc">Hono REST API. MCP server (Streamable HTTP transport). Entry point for Docker image.</div></div>
-      <div class="pkg-row"><div class="pkg-name">@locigram/pipeline</div><div class="pkg-desc">Ingest loop: receive raw content → LLM extraction (or skip if preClassified) → entity resolve → dedup check → write to Postgres + Qdrant.</div></div>
-      <div class="pkg-row"><div class="pkg-name">@locigram/truth</div><div class="pkg-desc">Truth engine: promotion logic, decay sweep, co-occurrence cluster analysis, noise re-assessment.</div></div>
-      <div class="pkg-row"><div class="pkg-name">@locigram/vector</div><div class="pkg-desc">Qdrant wrapper. One collection per palace. Point ID stored as <code>embedding_id</code> on the locigram.</div></div>
-      <div class="pkg-row"><div class="pkg-name">@locigram/registry</div><div class="pkg-desc">Connector plugin registry (singleton). Scans env vars at startup, instantiates matching connectors.</div></div>
-      <div class="pkg-row"><div class="pkg-name">@locigram/connector-microsoft365</div><div class="pkg-desc">M365 email (Graph delta sync) + Teams (thread-grouped, 2h cold threshold).</div></div>
-      <div class="pkg-row"><div class="pkg-name">@locigram/connector-halopsa</div><div class="pkg-desc">HaloPSA tickets (knowledge), assets and contracts (reference).</div></div>
-      <div class="pkg-row"><div class="pkg-name">@locigram/connector-ninjaone</div><div class="pkg-desc">NinjaOne devices (all reference) + alerts (knowledge).</div></div>
-      <div class="pkg-row"><div class="pkg-name">@locigram/connector-gmail</div><div class="pkg-desc">Gmail via historyId incremental sync.</div></div>
-      <div class="pkg-row"><div class="pkg-name">@locigram/connector-qbo</div><div class="pkg-desc">QuickBooks Online. PreClassified path — LLM extraction skipped, financial amounts in JSONB metadata.</div></div>
-      <div class="pkg-row"><div class="pkg-name">@locigram/connector-webhook</div><div class="pkg-desc">Always-on push connector. Primary integration point for LLM session summaries.</div></div>
-    </div>
-
-    <h3>Stack</h3>
-    <div class="chips">
-      <div class="chip">Bun</div>
-      <div class="chip">TypeScript</div>
-      <div class="chip">Hono</div>
-      <div class="chip">Drizzle ORM</div>
-      <div class="chip">Zod</div>
-      <div class="chip">PostgreSQL</div>
-      <div class="chip">Qdrant</div>
-      <div class="chip">MCP (Streamable HTTP)</div>
-      <div class="chip">Docker Compose</div>
-      <div class="chip">Kubernetes / K3s</div>
+      <div class="arch-table">
+        <table>
+          <thead>
+            <tr><th>Package</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="pkg">@locigram/server</td><td class="desc">Hono REST API + MCP server (Streamable HTTP). Docker entry point.</td></tr>
+            <tr><td class="pkg">@locigram/pipeline</td><td class="desc">Ingest loop — raw content to LLM extraction, entity resolution, dedup, and storage.</td></tr>
+            <tr><td class="pkg">@locigram/truth</td><td class="desc">Truth engine — promotion logic, decay sweep, co-occurrence clustering, noise re-assessment.</td></tr>
+            <tr><td class="pkg">@locigram/vector</td><td class="desc">Qdrant wrapper. One collection per palace. Semantic search layer.</td></tr>
+            <tr><td class="pkg">@locigram/connector-*</td><td class="desc">Microsoft 365, Gmail, HaloPSA, NinjaOne, QuickBooks Online, Webhook. Plugin architecture — auto-registered from env vars.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
-
   <!-- Footer -->
   <footer>
-    <span>© 2026 Locigram · <a href="https://github.com/locigram/locigram">github.com/locigram/locigram</a></span>
-    <span><a href="mailto:hello@locigram.ai">hello@locigram.ai</a></span>
+    <div class="footer-inner">
+      <ul class="footer-links">
+        <li><a href="https://github.com/locigram/locigram">GitHub</a></li>
+        <li><a href="mailto:hello@locigram.ai">hello@locigram.ai</a></li>
+      </ul>
+      <span class="footer-copy">&copy; 2026 Locigram</span>
+    </div>
   </footer>
 
-</div>
 </body>
 </html>

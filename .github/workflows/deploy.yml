@@ -1,0 +1,35 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/locigram/locigram-web:latest
+
+      - name: Deploy to K3s
+        run: |
+          sudo apt-get update && sudo apt-get install -y sshpass
+          sshpass -p "${{ secrets.K3S_SSH_PASS }}" ssh -o StrictHostKeyChecking=no sudobot@10.10.100.80 \
+            "sudo KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl rollout restart deployment/locigram-web -n locigram-web"
