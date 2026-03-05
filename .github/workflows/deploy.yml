@@ -29,7 +29,11 @@ jobs:
           tags: ghcr.io/locigram/locigram-web:latest
 
       - name: Deploy to K3s
+        # Note: K3s is on a private network (10.10.100.80) — SSH from GitHub runners will time out.
+        # Image is already pushed to GHCR above. Run this manually after a push:
+        #   sshpass -p "..." ssh sudobot@10.10.100.80 "sudo kubectl -n locigram-web rollout restart deployment/locigram-web"
+        continue-on-error: true
         run: |
           sudo apt-get update && sudo apt-get install -y sshpass
-          sshpass -p "${{ secrets.K3S_SSH_PASS }}" ssh -o StrictHostKeyChecking=no sudobot@10.10.100.80 \
+          sshpass -p "${{ secrets.K3S_SSH_PASS }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 sudobot@10.10.100.80 \
             "sudo KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl rollout restart deployment/locigram-web -n locigram-web"
